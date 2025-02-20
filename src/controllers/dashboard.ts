@@ -11,6 +11,7 @@ import { Queue } from "bullmq";
 import { renderLoginPage } from "./views/login";
 import logger from "../logger";
 import parse from "parse-duration";
+import fastRedact from "fast-redact";
 
 export interface User {
   username: string;
@@ -27,6 +28,10 @@ export interface DashboardOptions {
 }
 
 let users: Map<string, User> = new Map();
+
+const redact = fastRedact({
+  paths: ["gitUrl", "githubToken"],
+});
 
 passport.use(
   new LocalStrategy(function (username, password, cb) {
@@ -115,7 +120,11 @@ export function ConfigureRoutes(app: Router, opts: DashboardOptions) {
   const adminAdapter = new ExpressAdapter();
   adminAdapter.setBasePath(`${basePath}/ui/admin`);
   createBullBoard({
-    queues: queues.map((q) => new BullMQAdapter(q)),
+    queues: queues.map((q) => {
+      const adapter = new BullMQAdapter(q);
+      adapter.setFormatter("data", (data) => redact(data));
+      return adapter;
+    }),
     serverAdapter: adminAdapter,
   });
 
