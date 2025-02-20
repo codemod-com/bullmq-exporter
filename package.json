@@ -1,6 +1,6 @@
 {
   "name": "bullmq-exporter",
-  "version": "1.0.0",
+  "version": "1.0.1",
   "description": "Service that can be used to monitor BullMQ by providing Prometheus metrics and a Bullmq dashboard secured behind a login wall.",
   "main": "src/server.ts",
   "scripts": {

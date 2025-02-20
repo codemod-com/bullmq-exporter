@@ -1,5 +1,12 @@
 # Changelog
 
+## [1.0.1](https://github.com/codemod-com/bullmq-exporter/compare/v1.0.0...v1.0.1) (2025-02-20)
+
+
+### Bug Fixes
+
+* Fix redacting data ([c1a0342](https://github.com/codemod-com/bullmq-exporter/commit/c1a034256c1f39ac5dcab9461c88f19debc7e2ce))
+
 ## 1.0.0 (2025-02-20)
 
 
