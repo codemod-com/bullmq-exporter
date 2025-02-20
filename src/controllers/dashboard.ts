@@ -12,7 +12,7 @@ import { renderLoginPage } from "./views/login";
 import logger from "../logger";
 import parse from "parse-duration";
 import fastRedact from "fast-redact";
-
+import { User as NonCredentialedUser } from "../types/user";
 export interface User {
   username: string;
   password: string;
@@ -30,7 +30,7 @@ export interface DashboardOptions {
 let users: Map<string, User> = new Map();
 
 const redact = fastRedact({
-  paths: ["gitUrl", "githubToken"],
+  paths: ["jobData.gitUrl", "jobData.githubToken"],
 });
 
 passport.use(
@@ -47,14 +47,17 @@ passport.serializeUser((user, cb) => {
   cb(null, user);
 });
 
-passport.deserializeUser((user, cb) => {
-  cb(null, user as any);
+passport.deserializeUser((user: NonCredentialedUser, cb) => {
+  cb(null, user);
 });
 
-const ensureRole = (options: any): express.RequestHandler => {
+const ensureRole = (options: {
+  role: string;
+  failureRedirect: string;
+}): express.RequestHandler => {
   return (req, res, next) => {
-    const user = (req.session as any)?.passport.user;
-    if (user.role == options.role) return next();
+    const user = req.session.passport?.user;
+    if (user?.role === options.role) return next();
     res.redirect(options.failureRedirect);
   };
 };
@@ -96,8 +99,8 @@ export function ConfigureRoutes(app: Router, opts: DashboardOptions) {
     `/ui/login`,
     passport.authenticate("local", { failureRedirect: failedLoginRedirect }),
     (req, res) => {
-      const user = (req.session as any)?.passport.user;
-      if (user.role == "admin") return res.redirect(`${basePath}/ui/admin`);
+      const user = req.session.passport?.user;
+      if (user?.role === "admin") return res.redirect(`${basePath}/ui/admin`);
       return res.redirect(`${basePath}/ui`);
     }
   );
@@ -106,7 +109,11 @@ export function ConfigureRoutes(app: Router, opts: DashboardOptions) {
   const readOnlyAdapter = new ExpressAdapter();
   readOnlyAdapter.setBasePath(`${basePath}/ui`);
   createBullBoard({
-    queues: queues.map((q) => new BullMQAdapter(q, { readOnlyMode: true })),
+    queues: queues.map((q) => {
+      const adapter = new BullMQAdapter(q, { readOnlyMode: true });
+      adapter.setFormatter("data", (data) => redact(data));
+      return adapter;
+    }),
     serverAdapter: readOnlyAdapter,
   });
 
